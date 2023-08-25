@@ -142,9 +142,10 @@
 
         // Obtener la respuesta del bot de la API y agregarlo a la conversación
         let botResponse = responseData.response;
-        conversation.messages.push({ role: botResponse.role, content: botResponse.content });
+        let botMessage = JSON.parse(botResponse.content)
+        conversation.messages.push({ role: botResponse.role, content: botMessage });
 
-        addBotMessage(botResponse.content);
+        addBotMessage(botMessage);
         sendButton.disabled = false;
       } catch (error) {
         console.log(error)
