@@ -1,31 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat App</title>
-  <link rel="stylesheet" type="text/css" href="./styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wallbit Bot</title>
+<style>
+  body {
+    margin: 0;
+    background-color: black;
+    color: white;
+    font-family: Arial, sans-serif;
+  }
+
+  #header {
+    text-align: center;
+    padding-top: 20px;
+  }
+
+  #chat-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 5px;
+    text-align: center;
+    border-radius: 10px;
+    background-color: rgba(0, 0, 0, 0.3);
+  }
+
+  #conversation {
+    width: 90%;
+    height: 400px;
+    background-color: black;
+    color: white;
+    border: 1px solid rgb(67, 40, 163);
+    border-radius: 15px;
+    resize: none;
+    padding: 10px;
+    overflow: auto;
+    margin: 0 auto;
+  }
+
+  #inputMessage {
+    margin-top: 10px;
+    width: 70%;
+    padding: 5px;
+    border: none;
+    border-radius: 5px 0 0 5px;
+    background-color: rgb(253, 253, 253);
+  }
+
+  #sendButton {
+    width: 15%;
+    height: 30px;
+    background-color: rgb(44, 113, 170);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    padding-left: 5px;
+  }
+
+  #sendButton:disabled {
+    background-color: gray; /* Cambia el color a gris cuando el botón está deshabilitado */
+  }
+
+  .user-message {
+    background-color: rgba(0, 128, 0, 0.5);
+    color: white;
+    padding: 5px;
+    border-radius: 5px;
+    margin: 5px 0;
+  }
+
+  .bot-message {
+    background-color: rgb(13, 153, 255);
+    color: white;
+    padding: 5px;
+    border-radius: 5px;
+    margin: 5px 0;
+  }
+</style>
 </head>
 <body>
-  <div class="container">
-    <div class="logo">
-      <img src="./assets/wallbit-logo.png" alt="Logo">
-    </div>
-    <form id="form" action="">
-      <input id="input" autocomplete="off" placeholder="Enter your message..." />
-      <button>Send</button>
-    </form>
-    <ul id="messages"></ul>
+  <div id="header">
+    <img src="https://i.imgur.com/z754hAl.png" alt="Logo" width="100" height="100">
   </div>
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script>
-    document.addEventListener("DOMContentLoaded", function() {
-    let socket = io();
+  <div id="chat-container">
+    <h1>Wallbit Bot</h1>
+    <div id="conversation"></div>
+    <div>
+      <input type="text" id="inputMessage" placeholder="Escribe aquí..." onkeydown="handleEnter(event)" />
+      <button id="sendButton" onclick="sendMessage()" disabled>Send</button>
+    </div>
+  </div>
 
-    let form = document.getElementById("form");
-    let input = document.getElementById("input");
-    let messagesList = document.getElementById("messages");
+  <script>
+    const conversationDiv = document.getElementById('conversation');
+    const inputMessage = document.getElementById('inputMessage');
+    const sendButton = document.getElementById('sendButton'); // Agregamos el botón a una variable
+    sendButton.disabled = false;
 
     let conversation = { messages: 
      [{
@@ -34,18 +106,29 @@
 		}]
     }; // Objeto para almacenar la conversación
 
-    form.addEventListener("submit", async function(event) {
-      event.preventDefault(); // Evitar la recarga de la página por defecto
-
-      let userMessage = input.value;
-      input.value = "";
-
-      // Agregar el mensaje del usuario a la conversación
+    async function sendMessage() {
+      const userMessage = inputMessage.value;
       conversation.messages.push({ role: "user", content: userMessage });
+      console.log(conversation)
+      if (userMessage.trim() !== '') {
+        addUserMessage(userMessage);
+        inputMessage.value = '';
+        sendButton.disabled = true;
+        await getBotResponse();
+      }
+    }
 
+    function simulateBotResponse() {
+      const responses = ["Sí", "No", "No sé"];
+      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+      setTimeout(() => {
+        addBotMessage(randomResponse);
+      }, 500);
+    }
+
+    async function  getBotResponse() {
       try {
-        // Enviar la conversación a la API
-        let response = await fetch(`https://in8yenqepj.execute-api.us-east-2.amazonaws.com/`, {
+        let response = await fetch('https://in8yenqepj.execute-api.us-east-2.amazonaws.com/', {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -53,9 +136,7 @@
           body: JSON.stringify(conversation)
         });
 
-        if (!response.ok) {
-          throw new Error("Error en la respuesta de la API");
-        }
+        if (!response.ok) throw new Error("Error en la respuesta de la API");
 
         let responseData = await response.json();
 
@@ -63,32 +144,34 @@
         let botResponse = responseData.response;
         conversation.messages.push({ role: botResponse.role, content: botResponse.content });
 
-        // Agregar los mensajes a la lista y scroll a la parte inferior
-        updateMessages();
-        messagesList.scrollTop = messagesList.scrollHeight;
+        addBotMessage(botResponse.content);
+        sendButton.disabled = false;
       } catch (error) {
-        console.error("Error al comunicarse con la API:", error);
+        console.log(error)
       }
-    });
-
-    socket.on("chat message", function(msg) {
-      conversation.messages.push({ role: "user", content: msg });
-      updateMessages();
-      messagesList.scrollTop = messagesList.scrollHeight;
-    });
-
-    function updateMessages() {
-      messagesList.innerHTML = ""; // Limpiar la lista de mensajes
-      conversation.messages.forEach(function(msg) {
-        if (conversation.messages.indexOf(msg) !== 0) {
-          var li = document.createElement("li");
-          li.textContent = msg.role.charAt(0).toUpperCase() + msg.role.slice(1) + ": " + msg.content;
-          li.classList.add("message", msg.role); // Agrega la clase "message" para estilos compartidos
-          messagesList.appendChild(li);
-        }
-      });
     }
-  });
+
+    function addUserMessage(message) {
+      const userMessageDiv = document.createElement('div');
+      userMessageDiv.className = 'user-message';
+      userMessageDiv.textContent = `Usuario: ${message}`;
+      conversationDiv.appendChild(userMessageDiv);
+      conversationDiv.scrollTop = conversationDiv.scrollHeight;
+    }
+
+    function addBotMessage(message) {
+      const botMessageDiv = document.createElement('div');
+      botMessageDiv.className = 'bot-message';
+      botMessageDiv.textContent = `WallbiBot: ${message}`;
+      conversationDiv.appendChild(botMessageDiv);
+      conversationDiv.scrollTop = conversationDiv.scrollHeight;
+    }
+
+    function handleEnter(event) {
+      if (event.key === "Enter") {
+        sendMessage();
+      }
+    }
   </script>
 </body>
 </html>
