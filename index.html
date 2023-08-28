@@ -133,7 +133,8 @@
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify(conversation)
+          body: JSON.stringify(conversation),
+          timeout: 50000
         });
 
         if (!response.ok) throw new Error("Error en la respuesta de la API");
