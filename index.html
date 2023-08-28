@@ -109,7 +109,7 @@
     async function sendMessage() {
       const userMessage = inputMessage.value;
       conversation.messages.push({ role: "user", content: userMessage });
-      console.log(conversation)
+      //console.log(conversation)
       if (userMessage.trim() !== '') {
         addUserMessage(userMessage);
         inputMessage.value = '';
@@ -145,6 +145,8 @@
         let botResponse = responseData.response;
         let botMessage = JSON.parse(botResponse.content)
         conversation.messages.push({ role: botResponse.role, content: botMessage });
+
+        console.log('bot: ',botMessage)
 
         addBotMessage(botMessage);
         sendButton.disabled = false;
