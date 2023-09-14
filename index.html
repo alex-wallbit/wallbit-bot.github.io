@@ -166,10 +166,10 @@
     function addBotMessage(message) {
       const botMessageDiv = document.createElement('div');
       botMessageDiv.className = 'bot-message';
-      botMessageDiv.textContent = `WallbiBot: ${message}`;
+      botMessageDiv.textContent = `${message}`;
 
       const formattedMessage = message.replace(/\n/g, '<br>');
-      botMessageDiv.innerHTML = `Usuario: ${formattedMessage}`;
+      botMessageDiv.innerHTML = `${formattedMessage}`;
       conversationDiv.appendChild(botMessageDiv);
       conversationDiv.scrollTop = conversationDiv.scrollHeight;
     }
