@@ -18,7 +18,7 @@
   }
 
   #chat-container {
-    max-width: 600px;
+    max-width: 800px;
     margin: 0 auto;
     padding: 5px;
     text-align: center;
@@ -155,7 +155,10 @@
     function addUserMessage(message) {
       const userMessageDiv = document.createElement('div');
       userMessageDiv.className = 'user-message';
-      userMessageDiv.textContent = `Usuario: ${message}`;
+
+      // Reemplazar saltos de línea con <br> para preservar el formato
+      const formattedMessage = message.replace(/\n/g, '<br>');
+      userMessageDiv.innerHTML = `Usuario: ${formattedMessage}`;
       conversationDiv.appendChild(userMessageDiv);
       conversationDiv.scrollTop = conversationDiv.scrollHeight;
     }
@@ -164,6 +167,9 @@
       const botMessageDiv = document.createElement('div');
       botMessageDiv.className = 'bot-message';
       botMessageDiv.textContent = `WallbiBot: ${message}`;
+
+      const formattedMessage = message.replace(/\n/g, '<br>');
+      botMessageDiv.innerHTML = `Usuario: ${formattedMessage}`;
       conversationDiv.appendChild(botMessageDiv);
       conversationDiv.scrollTop = conversationDiv.scrollHeight;
     }
