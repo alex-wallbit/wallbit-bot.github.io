@@ -28,7 +28,7 @@
 
   #conversation {
     width: 90%;
-    height: 400px;
+    height: 350px;
     background-color: black;
     color: white;
     border: 1px solid rgb(67, 40, 163);
@@ -92,6 +92,9 @@
       <button id="sendButton" onclick="sendMessage()" disabled>Send</button>
     </div>
   </div>
+  <div id="related-questions">
+    <!-- Aquí se mostrarán las preguntas -->
+  </div>
 
   <script>
     const conversationDiv = document.getElementById('conversation');
@@ -112,6 +115,7 @@
         inputMessage.value = '';
         sendButton.disabled = true;
         await getBotResponse();
+        await getRelatedQuestions(userMessage)
       }
     }
 
@@ -147,6 +151,61 @@
 
         addBotMessage(botMessage);
         sendButton.disabled = false;
+      } catch (error) {
+        console.log(error)
+      }
+    }
+
+    async function  getRelatedQuestions(userMessage) {
+      try {
+        const body = {
+          messages: conversation.messages,
+          user_input: userMessage
+        }
+        let response = await fetch('https://emqxieecnrrmfmblewpcluaqwe0uudnx.lambda-url.us-east-2.on.aws/', {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(body),
+          timeout: 50000
+        });
+
+        if (!response.ok) throw new Error("Error en la respuesta de la API");
+
+        const responseData = await response.json();
+        const questionsObject = responseData.response;
+
+        const relatedQuestionsDiv = document.getElementById('related-questions');
+        relatedQuestionsDiv.innerHTML = '';
+
+        // Crear un título "Related Questions"
+        const title = document.createElement('h2');
+        title.textContent = 'Related Questions';
+        relatedQuestionsDiv.appendChild(title);
+
+        // Mostrar las preguntas y agregar evento de clic
+        for (const key in questionsObject) {
+            if (questionsObject.hasOwnProperty(key)) {
+                const question = questionsObject[key];
+
+                // Crear un elemento de pregunta
+                const questionElement = document.createElement('div');
+                questionElement.textContent = question;
+                questionElement.style.cursor = 'pointer';
+
+                // Agregar evento de clic para hacer console.log de la pregunta
+                questionElement.addEventListener('click', async () => {
+                    //console.log('Pregunta:', question);
+                    inputMessage.value = question
+                    relatedQuestionsDiv.innerHTML = '';
+                    await sendMessage()
+                });
+
+                relatedQuestionsDiv.appendChild(questionElement);
+            }
+        }
+      
       } catch (error) {
         console.log(error)
       }
