@@ -78,6 +78,16 @@
     border-radius: 5px;
     margin: 5px 0;
   }
+
+  /* Estilo para las preguntas */
+  .question {
+      cursor: pointer;
+  }
+
+  /* Estilo cuando el ratón está sobre la pregunta */
+  .question:hover {
+      color: rgb(69, 189, 219);
+  }
 </style>
 </head>
 <body>
@@ -191,8 +201,8 @@
 
                 // Crear un elemento de pregunta
                 const questionElement = document.createElement('div');
+                questionElement.classList.add('question');
                 questionElement.textContent = question;
-                questionElement.style.cursor = 'pointer';
 
                 // Agregar evento de clic para hacer console.log de la pregunta
                 questionElement.addEventListener('click', async () => {
