@@ -77,6 +77,8 @@
     padding: 5px;
     border-radius: 5px;
     margin: 5px 0;
+    white-space: pre-line;
+    text-align: left;
   }
 
   /* Estilo para las preguntas */
@@ -112,9 +114,11 @@
     const sendButton = document.getElementById('sendButton'); // Agregamos el botón a una variable
     sendButton.disabled = false;
 
-    let conversation = { messages: 
-     []
-    }; // Objeto para almacenar la conversación
+    let conversation = { messages:  [] }; // Objeto para almacenar la conversación
+    let partialResponse = ''; // Variable para almacenar la respuesta parcial
+    let currentBotMessage = ''; // Variable para almacenar el mensaje actual del bot
+    let botMessageDiv; // Variable para almacenar el elemento HTML del mensaje
+
 
     async function sendMessage() {
       const userMessage = inputMessage.value;
@@ -137,29 +141,50 @@
       }, 500);
     }
 
-    async function  getBotResponse() {
+    async function getBotResponse() {
       try {
-        let response = await fetch('https://fmx6og4k2cdzkso64rdhwpko4q0sxido.lambda-url.us-east-2.on.aws/', {
+        console.log(conversation)
+        let response = await fetch('https://tmrzx2nv5ekj2el55ewy2cuyte0bumnw.lambda-url.us-east-1.on.aws/', {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
           body: JSON.stringify(conversation),
           timeout: 50000
         });
 
-        if (!response.ok) throw new Error("Error en la respuesta de la API");
+        if (!response.ok) throw new Error('Error en la respuesta de la API');
 
-        let responseData = await response.json();
+        // Crear un elemento para mostrar el mensaje
+        botMessageDiv = document.createElement('div');
+        botMessageDiv.className = 'bot-message';
+        conversationDiv.appendChild(botMessageDiv);
 
-        // Obtener la respuesta del bot de la API y agregarlo a la conversación
-        let botResponse = responseData.response;
-        let botMessage = JSON.parse(botResponse.content)
-        conversation.messages.push({ role: botResponse.role, content: botMessage });
+        // Leer la respuesta como una corriente de datos
+        const reader = response.body.getReader();
 
-        console.log('bot: ',botMessage)
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-        addBotMessage(botMessage);
+          // Convertir el fragmento de datos a texto
+          const chunk = new TextDecoder().decode(value);
+
+          // Mostrar letra por letra
+          for (const letter of chunk) {
+            partialResponse += letter;
+            botMessageDiv.innerHTML += letter;
+            conversationDiv.scrollTop = conversationDiv.scrollHeight;
+            await sleep(20);  // Función sleep para pausar entre letras
+          }
+          /*
+          botMessageDiv.innerHTML += message;
+          conversationDiv.scrollTop = conversationDiv.scrollHeight;
+          await sleep(getRandomWait());*/
+        }
+        conversation.messages.push({ role: "assistant", content: partialResponse });
+        // Limpiar la respuesta parcial
+        partialResponse = '';
+        currentBotMessage = '';
+
+        // Habilitar el botón de envío
         sendButton.disabled = false;
       } catch (error) {
         console.log(error)
@@ -172,7 +197,7 @@
           messages: conversation.messages,
           user_input: userMessage
         }
-        let response = await fetch('https://emqxieecnrrmfmblewpcluaqwe0uudnx.lambda-url.us-east-2.on.aws/', {
+        let response = await fetch('https://pd3amv2kjtxw4hhvfeosblsmd40axtfg.lambda-url.us-east-1.on.aws/', {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -184,8 +209,8 @@
         if (!response.ok) throw new Error("Error en la respuesta de la API");
 
         const responseData = await response.json();
-        const questionsObject = responseData.response;
-
+        const questionsObject = JSON.parse(responseData.response)
+        
         const relatedQuestionsDiv = document.getElementById('related-questions');
         relatedQuestionsDiv.innerHTML = '';
 
@@ -198,7 +223,7 @@
         for (const key in questionsObject) {
             if (questionsObject.hasOwnProperty(key)) {
                 const question = questionsObject[key];
-
+                
                 // Crear un elemento de pregunta
                 const questionElement = document.createElement('div');
                 questionElement.classList.add('question');
@@ -209,7 +234,7 @@
                     //console.log('Pregunta:', question);
                     inputMessage.value = question
                     relatedQuestionsDiv.innerHTML = '';
-                    await sendMessage()
+                    //await sendMessage()
                 });
 
                 relatedQuestionsDiv.appendChild(questionElement);
@@ -232,15 +257,34 @@
       conversationDiv.scrollTop = conversationDiv.scrollHeight;
     }
 
-    function addBotMessage(message) {
-      const botMessageDiv = document.createElement('div');
-      botMessageDiv.className = 'bot-message';
-      botMessageDiv.textContent = `${message}`;
-
-      const formattedMessage = message.replace(/\n/g, '<br>');
-      botMessageDiv.innerHTML = `${formattedMessage}`;
-      conversationDiv.appendChild(botMessageDiv);
+    async function addBotMessage(message) {
+      botMessageDiv.innerHTML += message;
       conversationDiv.scrollTop = conversationDiv.scrollHeight;
+      await sleep(getRandomWait());
+      /*
+      partialResponse += message;
+      // Mostrar los caracteres en tiempo real
+      for (let i = 0; i < partialResponse.length; i++) {
+        const character = partialResponse[i];
+        
+        currentBotMessage += character;
+        botMessageDiv.innerHTML = currentBotMessage;
+        conversationDiv.scrollTop = conversationDiv.scrollHeight;
+        // Espera 100 milisegundos entre cada letra (ajusta según tu preferencia)
+        
+      }*/
+
+    }
+
+    function getRandomWait() {
+      const randomNumber = Math.random();  // Genera un número decimal aleatorio entre 0 (inclusive) y 1 (exclusivo)
+      const scaledNumber = randomNumber * 17;  // Escala el número al rango de 0 a 7
+      const shiftedNumber = scaledNumber + 20;  // Traslada el número al rango de 10 a 17
+      return Math.floor(shiftedNumber);  // Redondea hacia abajo para obtener un número entero entre 10 y 17 (ambos inclusive)
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     function handleEnter(event) {
