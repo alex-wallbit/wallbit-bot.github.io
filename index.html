@@ -234,7 +234,8 @@
                     //console.log('Pregunta:', question);
                     inputMessage.value = question
                     relatedQuestionsDiv.innerHTML = '';
-                    //await sendMessage()
+                    if(!sendButton.disabled)
+                      await sendMessage()
                 });
 
                 relatedQuestionsDiv.appendChild(questionElement);
