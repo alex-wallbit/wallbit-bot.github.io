@@ -104,6 +104,7 @@
       <button id="sendButton" onclick="sendMessage()" disabled>Send</button>
     </div>
   </div>
+  <h2>Related Questions</h2>
   <div id="related-questions">
     <!-- Aquí se mostrarán las preguntas -->
   </div>
@@ -112,6 +113,7 @@
     const conversationDiv = document.getElementById('conversation');
     const inputMessage = document.getElementById('inputMessage');
     const sendButton = document.getElementById('sendButton'); // Agregamos el botón a una variable
+    const relatedQuestionsDiv = document.getElementById('related-questions');
     sendButton.disabled = false;
 
     let conversation = { messages:  [] }; // Objeto para almacenar la conversación
@@ -119,17 +121,20 @@
     let currentBotMessage = ''; // Variable para almacenar el mensaje actual del bot
     let botMessageDiv; // Variable para almacenar el elemento HTML del mensaje
 
-
     async function sendMessage() {
       const userMessage = inputMessage.value;
       conversation.messages.push({ role: "user", content: userMessage });
       //console.log(conversation)
       if (userMessage.trim() !== '') {
+        inputMessage.disabled = true
         addUserMessage(userMessage);
+        relatedQuestionsDiv.innerHTML = '';
         inputMessage.value = '';
         sendButton.disabled = true;
-        await getBotResponse();
-        await getRelatedQuestions(userMessage)
+        await Promise.all([getBotResponse(), getRelatedQuestions(userMessage)])
+        //await getBotResponse();
+        //await getRelatedQuestions(userMessage)
+        inputMessage.disabled = false
       }
     }
 
@@ -156,6 +161,7 @@
         botMessageDiv = document.createElement('div');
         botMessageDiv.className = 'bot-message';
         conversationDiv.appendChild(botMessageDiv);
+        
 
         // Leer la respuesta como una corriente de datos
         const reader = response.body.getReader();
@@ -166,18 +172,11 @@
 
           // Convertir el fragmento de datos a texto
           const chunk = new TextDecoder().decode(value);
-
-          // Mostrar letra por letra
-          for (const letter of chunk) {
-            partialResponse += letter;
-            botMessageDiv.innerHTML += letter;
-            conversationDiv.scrollTop = conversationDiv.scrollHeight;
-            await sleep(20);  // Función sleep para pausar entre letras
-          }
-          /*
-          botMessageDiv.innerHTML += message;
+          partialResponse += chunk;
+          await sleep(getRandomWait());
+          botMessageDiv.innerHTML += chunk;
           conversationDiv.scrollTop = conversationDiv.scrollHeight;
-          await sleep(getRandomWait());*/
+          
         }
         conversation.messages.push({ role: "assistant", content: partialResponse });
         // Limpiar la respuesta parcial
@@ -186,6 +185,7 @@
 
         // Habilitar el botón de envío
         sendButton.disabled = false;
+        
       } catch (error) {
         console.log(error)
       }
@@ -210,14 +210,12 @@
 
         const responseData = await response.json();
         const questionsObject = JSON.parse(responseData.response)
-        
-        const relatedQuestionsDiv = document.getElementById('related-questions');
         relatedQuestionsDiv.innerHTML = '';
 
         // Crear un título "Related Questions"
-        const title = document.createElement('h2');
-        title.textContent = 'Related Questions';
-        relatedQuestionsDiv.appendChild(title);
+        //const title = document.createElement('h2');
+        //title.textContent = 'Related Questions';
+        //relatedQuestionsDiv.appendChild(title);
 
         // Mostrar las preguntas y agregar evento de clic
         for (const key in questionsObject) {
@@ -262,25 +260,12 @@
       botMessageDiv.innerHTML += message;
       conversationDiv.scrollTop = conversationDiv.scrollHeight;
       await sleep(getRandomWait());
-      /*
-      partialResponse += message;
-      // Mostrar los caracteres en tiempo real
-      for (let i = 0; i < partialResponse.length; i++) {
-        const character = partialResponse[i];
-        
-        currentBotMessage += character;
-        botMessageDiv.innerHTML = currentBotMessage;
-        conversationDiv.scrollTop = conversationDiv.scrollHeight;
-        // Espera 100 milisegundos entre cada letra (ajusta según tu preferencia)
-        
-      }*/
-
     }
 
     function getRandomWait() {
       const randomNumber = Math.random();  // Genera un número decimal aleatorio entre 0 (inclusive) y 1 (exclusivo)
-      const scaledNumber = randomNumber * 17;  // Escala el número al rango de 0 a 7
-      const shiftedNumber = scaledNumber + 20;  // Traslada el número al rango de 10 a 17
+      const scaledNumber = randomNumber * 12;  // Escala el número al rango de 0 a 7
+      const shiftedNumber = scaledNumber + 15;  // Traslada el número al rango de 10 a 17
       return Math.floor(shiftedNumber);  // Redondea hacia abajo para obtener un número entero entre 10 y 17 (ambos inclusive)
     }
 
