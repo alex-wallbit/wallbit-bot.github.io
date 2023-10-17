@@ -110,13 +110,15 @@
   </div>
 
   <script>
+    const sessionID = generateUUID()
     const conversationDiv = document.getElementById('conversation');
     const inputMessage = document.getElementById('inputMessage');
     const sendButton = document.getElementById('sendButton'); // Agregamos el botón a una variable
     const relatedQuestionsDiv = document.getElementById('related-questions');
     sendButton.disabled = false;
+    console.log('session:', sessionID)
 
-    let conversation = { messages:  [] }; // Objeto para almacenar la conversación
+    let conversation = { messages:  [], session_id: sessionID }; // Objeto para almacenar la conversación
     let partialResponse = ''; // Variable para almacenar la respuesta parcial
     let currentBotMessage = ''; // Variable para almacenar el mensaje actual del bot
     let botMessageDiv; // Variable para almacenar el elemento HTML del mensaje
@@ -149,7 +151,7 @@
     async function getBotResponse() {
       try {
         console.log(conversation)
-        let response = await fetch('https://tmrzx2nv5ekj2el55ewy2cuyte0bumnw.lambda-url.us-east-1.on.aws/', {
+        let response = await fetch('https://nlub4fe4hh7jd5j6y3aay35ed40kdxvw.lambda-url.us-east-1.on.aws/', {
           method: "POST",
           body: JSON.stringify(conversation),
           timeout: 50000
@@ -278,6 +280,18 @@
         sendMessage();
       }
     }
+
+    function generateUUID() {
+    let uuid = '', i, random;
+    for (i = 0; i < 32; i++) {
+      random = Math.random() * 16 | 0;
+      if (i === 8 || i === 12 || i === 16 || i === 20) {
+        uuid += '-';
+      }
+      uuid += (i === 12 ? 4 : (i === 16 ? (random & 3 | 8) : random)).toString(16);
+    }
+    return uuid;
+  }
   </script>
 </body>
 </html>
