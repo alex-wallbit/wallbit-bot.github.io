@@ -90,11 +90,57 @@
   .question:hover {
       color: rgb(69, 189, 219);
   }
+
+  #login-button {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: block;
+  }
+
+  #password-input {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: none;
+  }
+
+  #personal-questions {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: none;
+  }
+
+  /* Estilos para el loader */
+  .loader {
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid #3498db;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Estilos para el mensaje de error */
+  .error-message {
+    color: red;
+  }
+
 </style>
 </head>
 <body>
   <div id="header">
     <img src="https://i.imgur.com/z754hAl.png" alt="Logo" width="100" height="100">
+    <button id="login-button" onclick="showInput()">Login</button>
+    <input type="text" id="password-input" placeholder="Introduce un token valido" oninput="verifyToken(this)">
+    <h1 id="personal-questions">Personal questions ON</button>
   </div>
   <div id="chat-container">
     <h1>Wallbit Bot</h1>
@@ -104,21 +150,27 @@
       <button id="sendButton" onclick="sendMessage()" disabled>Send</button>
     </div>
   </div>
-  <h2>Related Questions</h2>
+  <h2 id="related-questions-title">Related Questions</h2>
   <div id="related-questions">
     <!-- Aquí se mostrarán las preguntas -->
   </div>
 
   <script>
+    const wallbitBotUrl = 'https://nlub4fe4hh7jd5j6y3aay35ed40kdxvw.lambda-url.us-east-1.on.aws/'
+    const wallbitContextBotUrl = 'https://2tnwqubvitqtnknptjbwakkvlq0ctdhl.lambda-url.us-east-1.on.aws/'
+    const relatedQuestionsUrl = 'https://pd3amv2kjtxw4hhvfeosblsmd40axtfg.lambda-url.us-east-1.on.aws/'
+    let currentBotUrl = wallbitBotUrl
     const sessionID = generateUUID()
     const conversationDiv = document.getElementById('conversation');
     const inputMessage = document.getElementById('inputMessage');
     const sendButton = document.getElementById('sendButton'); // Agregamos el botón a una variable
     const relatedQuestionsDiv = document.getElementById('related-questions');
+    const relatedQuestionsTitle = document.getElementById('related-questions-title');
     sendButton.disabled = false;
     console.log('session:', sessionID)
 
-    let conversation = { messages:  [], session_id: sessionID }; // Objeto para almacenar la conversación
+    let userToken = ''
+    let conversation = { messages:  [], session_id: sessionID, user_id: 1}; // Objeto para almacenar la conversación
     let partialResponse = ''; // Variable para almacenar la respuesta parcial
     let currentBotMessage = ''; // Variable para almacenar el mensaje actual del bot
     let botMessageDiv; // Variable para almacenar el elemento HTML del mensaje
@@ -133,9 +185,12 @@
         relatedQuestionsDiv.innerHTML = '';
         inputMessage.value = '';
         sendButton.disabled = true;
-        await Promise.all([getBotResponse(), getRelatedQuestions(userMessage)])
-        //await getBotResponse();
-        //await getRelatedQuestions(userMessage)
+
+        if (userToken === '')
+          await Promise.all([getBotResponse(), getRelatedQuestions(userMessage)])
+        else 
+          await getBotResponse();
+
         inputMessage.disabled = false
       }
     }
@@ -151,19 +206,32 @@
     async function getBotResponse() {
       try {
         console.log(conversation)
-        let response = await fetch('https://nlub4fe4hh7jd5j6y3aay35ed40kdxvw.lambda-url.us-east-1.on.aws/', {
-          method: "POST",
-          body: JSON.stringify(conversation),
-          timeout: 50000
-        });
-
-        if (!response.ok) throw new Error('Error en la respuesta de la API');
 
         // Crear un elemento para mostrar el mensaje
         botMessageDiv = document.createElement('div');
         botMessageDiv.className = 'bot-message';
         conversationDiv.appendChild(botMessageDiv);
-        
+        botMessageDiv.innerHTML += '<div class="loader"></div>';
+
+        let response = await fetch(currentBotUrl, {
+          method: "POST",
+          body: JSON.stringify(conversation),
+          timeout: 50000,
+          headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${userToken}` 
+          },
+        });
+
+        if (!response.ok) {
+          messageBox.innerHTML += '<div class="error-message">Error al obtener la respuesta de la API. F5!</div>';
+          throw new Error('Error en la respuesta de la API');
+        }
+
+        let loaders = document.getElementsByClassName('loader');
+        if (loaders.length > 0) {
+          loaders[0].remove();
+        }
 
         // Leer la respuesta como una corriente de datos
         const reader = response.body.getReader();
@@ -199,7 +267,7 @@
           messages: conversation.messages,
           user_input: userMessage
         }
-        let response = await fetch('https://pd3amv2kjtxw4hhvfeosblsmd40axtfg.lambda-url.us-east-1.on.aws/', {
+        let response = await fetch(relatedQuestionsUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -282,16 +350,64 @@
     }
 
     function generateUUID() {
-    let uuid = '', i, random;
-    for (i = 0; i < 32; i++) {
-      random = Math.random() * 16 | 0;
-      if (i === 8 || i === 12 || i === 16 || i === 20) {
-        uuid += '-';
+      let uuid = '', i, random;
+      for (i = 0; i < 32; i++) {
+        random = Math.random() * 16 | 0;
+        if (i === 8 || i === 12 || i === 16 || i === 20) {
+          uuid += '-';
+        }
+        uuid += (i === 12 ? 4 : (i === 16 ? (random & 3 | 8) : random)).toString(16);
       }
-      uuid += (i === 12 ? 4 : (i === 16 ? (random & 3 | 8) : random)).toString(16);
+      return uuid;
     }
-    return uuid;
-  }
+
+    function showInput() {
+      const loginButton = document.getElementById("login-button");
+      const passwordInput = document.getElementById("password-input");
+      loginButton.style.display = "none";
+      passwordInput.style.display = "block";
+    }
+
+    async function verifyToken(input) {
+      const token = input.value;
+      const userInfo = await getUserInfo(token)
+
+      if (userInfo) {
+        const loginButton = document.getElementById("login-button");
+        const passwordInput = document.getElementById("password-input");
+        const personalQuestions = document.getElementById("personal-questions");
+
+        loginButton.style.display = "none";
+        passwordInput.style.display = "none";
+        relatedQuestionsDiv.style.display = "none";
+        personalQuestions.style.display = "block";
+        currentBotUrl = wallbitContextBotUrl;
+        conversation = { messages:  [], session_id: sessionID, user_id: userInfo.user_info.id };
+        userToken = input.value
+        relatedQuestionsTitle.innerHTML = 'Suggested questions'
+        console.log('user logged!', userInfo.user_info.id)
+      }
+    }
+    async function getUserInfo (token) {
+        try {
+            const response = await fetch('https://api.dev.wallbit.io/api/v1/profile', getOptions(token))
+            const body = await response.json()
+            return body.data
+        } catch (error) {
+            console.log(error)
+            return null
+        } 
+    }
+
+    function getOptions (token) {
+        return {
+            method: "GET",
+            headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}` 
+            }
+        }
+    }
   </script>
 </body>
 </html>
