@@ -158,8 +158,10 @@
   <script>
     const wallbitBotUrl = 'https://nlub4fe4hh7jd5j6y3aay35ed40kdxvw.lambda-url.us-east-1.on.aws/'
     const wallbitContextBotUrl = 'https://2tnwqubvitqtnknptjbwakkvlq0ctdhl.lambda-url.us-east-1.on.aws/'
-    const relatedQuestionsUrl = 'https://pd3amv2kjtxw4hhvfeosblsmd40axtfg.lambda-url.us-east-1.on.aws/'
+    const relatedQuestionsUrl = 'https://hxaddposwg44x5dymjx7mhu7am0hzpjj.lambda-url.us-east-1.on.aws/'
+    const personalrelatedQuestionsUrl = 'https://iondazflykjua7fe3ay7u4ydde0bhjsx.lambda-url.us-east-1.on.aws/'
     let currentBotUrl = wallbitBotUrl
+    let currentRelatedQuestionsUrl = relatedQuestionsUrl
     const sessionID = generateUUID()
     const conversationDiv = document.getElementById('conversation');
     const inputMessage = document.getElementById('inputMessage');
@@ -186,10 +188,11 @@
         inputMessage.value = '';
         sendButton.disabled = true;
 
-        if (userToken === '')
+        await Promise.all([getBotResponse(), getRelatedQuestions(userMessage)])
+        /*if (userToken === '')
           await Promise.all([getBotResponse(), getRelatedQuestions(userMessage)])
         else 
-          await getBotResponse();
+          await getBotResponse();*/
 
         inputMessage.disabled = false
       }
@@ -267,7 +270,7 @@
           messages: conversation.messages,
           user_input: userMessage
         }
-        let response = await fetch(relatedQuestionsUrl, {
+        let response = await fetch(currentRelatedQuestionsUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -379,9 +382,10 @@
 
         loginButton.style.display = "none";
         passwordInput.style.display = "none";
-        relatedQuestionsDiv.style.display = "none";
-        personalQuestions.style.display = "block";
+        //relatedQuestionsDiv.style.display = "none";
+        //personalQuestions.style.display = "block";
         currentBotUrl = wallbitContextBotUrl;
+        currentRelatedQuestionsUrl = personalrelatedQuestionsUrl;
         conversation = { messages:  [], session_id: sessionID, user_id: userInfo.user_info.id };
         userToken = input.value
         relatedQuestionsTitle.innerHTML = 'Suggested questions'
