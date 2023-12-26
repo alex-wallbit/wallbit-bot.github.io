@@ -17,6 +17,13 @@
     padding-top: 20px;
   }
 
+  #top-right-div  {
+      position: fixed;
+      top: 10px; 
+      right: 10px; 
+      text-align: right;
+  }
+
   #chat-container {
     max-width: 800px;
     margin: 0 auto;
@@ -93,14 +100,14 @@
 
   #login-button {
       position: absolute;
-      top: 10px;
+      top: 20px;
       right: 10px;
-      display: block;
+      display: none;
   }
 
   #password-input {
       position: absolute;
-      top: 10px;
+      top: 30px;
       right: 10px;
       display: none;
   }
@@ -138,6 +145,15 @@
 <body>
   <div id="header">
     <img src="https://i.imgur.com/z754hAl.png" alt="Logo" width="100" height="100">
+  </div>
+  <div id="top-right-div">
+    <label for="modo">Selecciona el modo:</label>
+      <select id="modo" onchange="changeMode(this.value)">
+        <option value="teaching">Finanzas Personales</option>
+        <option value="analysis">Analizar Inversiones</option>
+        <option value="options">Opciones Inversion</option>
+      </select>
+
     <button id="login-button" onclick="showInput()">Login</button>
     <input type="text" id="password-input" placeholder="Introduce un token valido" oninput="verifyToken(this)">
     <h1 id="personal-questions">Personal questions ON</button>
@@ -156,12 +172,17 @@
   </div>
 
   <script>
-    const wallbitBotUrl = 'https://nlub4fe4hh7jd5j6y3aay35ed40kdxvw.lambda-url.us-east-1.on.aws/'
+    const wallbitTeachingBotUrl = 'https://nlub4fe4hh7jd5j6y3aay35ed40kdxvw.lambda-url.us-east-1.on.aws/'
     const wallbitContextBotUrl = 'https://2tnwqubvitqtnknptjbwakkvlq0ctdhl.lambda-url.us-east-1.on.aws/'
-    const relatedQuestionsUrl = 'https://hxaddposwg44x5dymjx7mhu7am0hzpjj.lambda-url.us-east-1.on.aws/'
+    const wallbitOptionsBotUrl = 'https://h26lwdv4t5ej5yeskrljepea2a0midvr.lambda-url.us-east-1.on.aws/'
+
+    //Related Questions
+    const teachingRelatedQuestionsUrl = 'https://hxaddposwg44x5dymjx7mhu7am0hzpjj.lambda-url.us-east-1.on.aws/'
     const personalrelatedQuestionsUrl = 'https://iondazflykjua7fe3ay7u4ydde0bhjsx.lambda-url.us-east-1.on.aws/'
-    let currentBotUrl = wallbitBotUrl
-    let currentRelatedQuestionsUrl = relatedQuestionsUrl
+
+    let currentBotUrl = wallbitTeachingBotUrl
+    let currentRelatedQuestionsUrl = teachingRelatedQuestionsUrl
+
     const sessionID = generateUUID()
     const conversationDiv = document.getElementById('conversation');
     const inputMessage = document.getElementById('inputMessage');
@@ -188,11 +209,11 @@
         inputMessage.value = '';
         sendButton.disabled = true;
 
-        await Promise.all([getBotResponse(), getRelatedQuestions(userMessage)])
-        /*if (userToken === '')
+        //await Promise.all([getBotResponse(), getRelatedQuestions(userMessage)])
+        if (userToken === '')
           await Promise.all([getBotResponse(), getRelatedQuestions(userMessage)])
         else 
-          await getBotResponse();*/
+          await getBotResponse();
 
         inputMessage.disabled = false
       }
@@ -215,15 +236,18 @@
         botMessageDiv.className = 'bot-message';
         conversationDiv.appendChild(botMessageDiv);
         botMessageDiv.innerHTML += '<div class="loader"></div>';
+        const headers = {
+            "Content-Type": "application/json"
+         }
+        if (userToken) {
+          headers.Authorization = `Bearer ${userToken}`
+        }
 
         let response = await fetch(currentBotUrl, {
           method: "POST",
           body: JSON.stringify(conversation),
           timeout: 50000,
-          headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${userToken}` 
-          },
+          headers: headers,
         });
 
         if (!response.ok) {
@@ -380,13 +404,12 @@
         const passwordInput = document.getElementById("password-input");
         const personalQuestions = document.getElementById("personal-questions");
 
-        loginButton.style.display = "none";
+        //loginButton.style.display = "none";
         passwordInput.style.display = "none";
         //relatedQuestionsDiv.style.display = "none";
         personalQuestions.style.display = "block";
-        currentBotUrl = wallbitContextBotUrl;
-        currentRelatedQuestionsUrl = personalrelatedQuestionsUrl;
-        conversation = { messages:  [], session_id: sessionID, user_id: userInfo.user_info.id };
+        
+        conversation = { messages: [], session_id: sessionID, user_id: userInfo.user_info.id };
         userToken = input.value
         relatedQuestionsTitle.innerHTML = 'Suggested questions'
         console.log('user logged!', userInfo.user_info.id)
@@ -412,6 +435,36 @@
             }
         }
     }
+
+    function changeMode(modo) {
+      const loginButton = document.getElementById('login-button');
+      const passwordInput = document.getElementById('password-input');
+      const personalQuestions = document.getElementById("personal-questions");
+
+      if (modo === 'teaching') {
+        passwordInput.style.display = 'none';
+        personalQuestions.style.display = "none";
+
+        currentBotUrl = wallbitTeachingBotUrl;
+        currentRelatedQuestionsUrl = teachingRelatedQuestionsUrl;
+      }
+
+      if (modo === 'analysis') {
+        passwordInput.style.display = 'inline-block';
+
+        currentBotUrl = wallbitContextBotUrl;
+        currentRelatedQuestionsUrl = personalrelatedQuestionsUrl;
+      }
+      
+      if (modo === 'options') {
+        passwordInput.style.display = 'none';
+        personalQuestions.style.display = "none";
+
+        currentBotUrl = wallbitOptionsBotUrl
+        //currentRelatedQuestionsUrl = personalrelatedQuestionsUrl;
+      } 
+    }
+
   </script>
 </body>
 </html>
