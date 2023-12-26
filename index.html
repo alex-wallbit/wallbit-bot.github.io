@@ -210,7 +210,7 @@
         sendButton.disabled = true;
 
         //await Promise.all([getBotResponse(), getRelatedQuestions(userMessage)])
-        if (userToken === '')
+        if (userToken !== '')
           await Promise.all([getBotResponse(), getRelatedQuestions(userMessage)])
         else 
           await getBotResponse();
