@@ -109,7 +109,7 @@
       position: absolute;
       top: 30px;
       right: 10px;
-      display: none;
+      display: block;
   }
 
   #personal-questions {
@@ -149,6 +149,7 @@
   <div id="top-right-div">
     <label for="modo">Selecciona el modo:</label>
       <select id="modo" onchange="changeMode(this.value)">
+        <option value="walli">Walli</option>
         <option value="teaching">Finanzas Personales</option>
         <option value="analysis">Analizar Inversiones</option>
         <option value="options">Opciones Inversion</option>
@@ -156,7 +157,7 @@
 
     <button id="login-button" onclick="showInput()">Login</button>
     <input type="text" id="password-input" placeholder="Introduce un token valido" oninput="verifyToken(this)">
-    <h1 id="personal-questions">Personal questions ON</button>
+    <h1 id="personal-questions">Login OK</button>
   </div>
   <div id="chat-container">
     <h1>Wallbit Bot</h1>
@@ -175,6 +176,7 @@
     const wallbitTeachingBotUrl = 'https://nlub4fe4hh7jd5j6y3aay35ed40kdxvw.lambda-url.us-east-1.on.aws/'
     const wallbitContextBotUrl = 'https://2tnwqubvitqtnknptjbwakkvlq0ctdhl.lambda-url.us-east-1.on.aws/'
     const wallbitOptionsBotUrl = 'https://h26lwdv4t5ej5yeskrljepea2a0midvr.lambda-url.us-east-1.on.aws/'
+    const walliBotUrl = 'https://v4scm4kvj5z4gb6w5vqnsxexem0liyoo.lambda-url.us-east-1.on.aws/'
 
     //Related Questions
     const teachingRelatedQuestionsUrl = 'https://hxaddposwg44x5dymjx7mhu7am0hzpjj.lambda-url.us-east-1.on.aws/'
@@ -463,6 +465,13 @@
         currentBotUrl = wallbitOptionsBotUrl
         //currentRelatedQuestionsUrl = personalrelatedQuestionsUrl;
       } 
+
+      if (modo === 'walli') {
+        passwordInput.style.display = 'inline-block';
+
+        currentBotUrl = walliBotUrl;
+        currentRelatedQuestionsUrl = teachingRelatedQuestionsUrl;
+      }
     }
 
   </script>
